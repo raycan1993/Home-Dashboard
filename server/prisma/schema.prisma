@@ -1,0 +1,82 @@
+// Prisma schema — single-user, no auth.
+// Tokens are stored as ciphertext (AES-256-GCM); see server/src/utils/crypto.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// OAuthToken
+// One row per provider (microsoft, strava, bring).
+// `accessTokenCipher` and `refreshTokenCipher` hold base64(iv ‖ tag ‖ ciphertext).
+// They are NEVER returned by any API endpoint and NEVER logged.
+// ------------------------------------------------------------
+model OAuthToken {
+  id                  String   @id @default(cuid())
+  provider            String   @unique // "microsoft" | "strava" | "bring"
+  accessTokenCipher   String   // base64(iv ‖ tag ‖ ciphertext)
+  refreshTokenCipher  String?  // some providers (e.g. Bring) issue session tokens only
+  expiresAt           DateTime?
+  scope               String?  // recorded for audit/least-privilege review
+  metadata            Json?    // provider-specific fields (e.g. listId, athleteId)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("oauth_tokens")
+}
+
+// ------------------------------------------------------------
+// CacheEntry
+// PostgreSQL-backed response cache. `data` is JSON of the API response
+// — never tokens, never secrets.
+// ------------------------------------------------------------
+model CacheEntry {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  data      String   // JSON
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+  @@map("cache_entries")
+}
+
+// ------------------------------------------------------------
+// OAuthState
+// CSRF defence for OAuth callbacks. We mint a state value before
+// redirecting to the provider, then verify it on the callback.
+// Single-use, short-lived (10 min).
+// ------------------------------------------------------------
+model OAuthState {
+  id         String   @id @default(cuid())
+  state      String   @unique
+  provider   String   // "microsoft" | "strava"
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([expiresAt])
+  @@map("oauth_states")
+}
+
+// ------------------------------------------------------------
+// AuditEvent
+// Records security-relevant actions: token rotations, OAuth grants,
+// failed token decrypts, rate-limit hits. Append-only by convention.
+// ------------------------------------------------------------
+model AuditEvent {
+  id         String   @id @default(cuid())
+  eventType  String   // e.g. "oauth.granted", "token.decrypt_failed"
+  provider   String?
+  message    String
+  context    Json?    // already-redacted structured context
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([eventType])
+  @@map("audit_events")
+}
