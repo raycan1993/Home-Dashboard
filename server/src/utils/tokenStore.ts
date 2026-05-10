@@ -27,7 +27,13 @@ async function audit(
 ): Promise<void> {
   try {
     await prisma.auditEvent.create({
-      data: { eventType, provider, message, context: context ?? null },
+      data: {
+        eventType,
+        provider,
+        message,
+        // Prisma's Json column refuses raw `null` — skip the field if absent.
+        ...(context !== undefined && { context: context as never }),
+      },
     });
   } catch (err) {
     logger.warn('Audit', 'audit write failed', { error: String(err) });
@@ -51,14 +57,14 @@ export async function saveTokens(
       refreshTokenCipher,
       expiresAt: creds.expiresAt ?? null,
       scope: creds.scope ?? null,
-      metadata: (creds.metadata ?? null) as never,
+      ...(creds.metadata !== undefined && { metadata: creds.metadata as never }),
     },
     update: {
       accessTokenCipher,
       refreshTokenCipher,
       expiresAt: creds.expiresAt ?? null,
       scope: creds.scope ?? null,
-      metadata: (creds.metadata ?? null) as never,
+      ...(creds.metadata !== undefined && { metadata: creds.metadata as never }),
     },
   });
 

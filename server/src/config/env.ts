@@ -58,9 +58,10 @@ const EnvSchema = z.object({
     .string()
     .min(32, 'TOKEN_ENC_KEY must be at least 32 base64 chars (32 raw bytes).'),
 
-  OPENWEATHER_API_KEY: optionalString,
+  // Open-Meteo — no API key. Defaults are Winterthur (CH).
+  WEATHER_LATITUDE: z.coerce.number().min(-90).max(90).default(47.5022),
+  WEATHER_LONGITUDE: z.coerce.number().min(-180).max(180).default(8.7386),
   WEATHER_CITY: z.string().default('Winterthur'),
-  WEATHER_COUNTRY: z.string().default('CH'),
 
   SBB_FROM: z.string().default('Winterthur'),
   SBB_TO: z.string().default('Zürich HB'),

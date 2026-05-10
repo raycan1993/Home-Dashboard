@@ -15,7 +15,7 @@ import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { logger, redact } from './logger';
 
 const ALLOWED_HOSTS = new Set([
-  'api.openweathermap.org',
+  'api.open-meteo.com',
   'transport.opendata.ch',
   'graph.microsoft.com',
   'login.microsoftonline.com',

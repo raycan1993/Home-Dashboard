@@ -15,7 +15,8 @@ healthRouter.get('/', async (_req, res, next) => {
       microsoft: await isProviderConnected('microsoft'),
       strava: await isProviderConnected('strava'),
       bring: await isProviderConnected('bring') || (!!env.BRING_EMAIL && !!env.BRING_PASSWORD),
-      weather: !!env.OPENWEATHER_API_KEY,
+      // Open-Meteo needs no key — always available.
+      weather: true,
     };
     const body: ApiResponse<ConnectionStatus> = {
       success: true,

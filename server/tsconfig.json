@@ -4,7 +4,7 @@
     "module": "commonjs",
     "lib": ["ES2022"],
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "..",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
@@ -15,10 +15,10 @@
     "resolveJsonModule": true,
     "declaration": false,
     "paths": {
-      "@home-dashboard/shared": ["../packages/shared/src"]
+      "@home-dashboard/shared": ["../packages/shared/src/index"]
     },
     "baseUrl": "."
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "../packages/shared/src/**/*"],
   "exclude": ["node_modules", "dist"]
 }

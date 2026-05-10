@@ -1,4 +1,4 @@
-// Prisma schema — single-user, no auth.
+// Prisma schema — single-user, no in-app auth.
 // Tokens are stored as ciphertext (AES-256-GCM); see server/src/utils/crypto.ts.
 
 generator client {
@@ -11,19 +11,16 @@ datasource db {
 }
 
 // ------------------------------------------------------------
-// OAuthToken
-// One row per provider (microsoft, strava, bring).
-// `accessTokenCipher` and `refreshTokenCipher` hold base64(iv ‖ tag ‖ ciphertext).
-// They are NEVER returned by any API endpoint and NEVER logged.
+// OAuthToken — encrypted refresh/access tokens for upstream services.
 // ------------------------------------------------------------
 model OAuthToken {
   id                  String   @id @default(cuid())
   provider            String   @unique // "microsoft" | "strava" | "bring"
-  accessTokenCipher   String   // base64(iv ‖ tag ‖ ciphertext)
-  refreshTokenCipher  String?  // some providers (e.g. Bring) issue session tokens only
+  accessTokenCipher   String
+  refreshTokenCipher  String?
   expiresAt           DateTime?
-  scope               String?  // recorded for audit/least-privilege review
-  metadata            Json?    // provider-specific fields (e.g. listId, athleteId)
+  scope               String?
+  metadata            Json?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -31,14 +28,12 @@ model OAuthToken {
 }
 
 // ------------------------------------------------------------
-// CacheEntry
-// PostgreSQL-backed response cache. `data` is JSON of the API response
-// — never tokens, never secrets.
+// CacheEntry — Postgres-backed response cache. JSON only; no secrets.
 // ------------------------------------------------------------
 model CacheEntry {
   id        String   @id @default(cuid())
   key       String   @unique
-  data      String   // JSON
+  data      String
   expiresAt DateTime
   createdAt DateTime @default(now())
 
@@ -47,15 +42,12 @@ model CacheEntry {
 }
 
 // ------------------------------------------------------------
-// OAuthState
-// CSRF defence for OAuth callbacks. We mint a state value before
-// redirecting to the provider, then verify it on the callback.
-// Single-use, short-lived (10 min).
+// OAuthState — CSRF defence for OAuth callbacks. Single-use, 10-min TTL.
 // ------------------------------------------------------------
 model OAuthState {
   id         String   @id @default(cuid())
   state      String   @unique
-  provider   String   // "microsoft" | "strava"
+  provider   String
   createdAt  DateTime @default(now())
   expiresAt  DateTime
 
@@ -64,16 +56,14 @@ model OAuthState {
 }
 
 // ------------------------------------------------------------
-// AuditEvent
-// Records security-relevant actions: token rotations, OAuth grants,
-// failed token decrypts, rate-limit hits. Append-only by convention.
+// AuditEvent — security telemetry. Append-only by convention.
 // ------------------------------------------------------------
 model AuditEvent {
   id         String   @id @default(cuid())
-  eventType  String   // e.g. "oauth.granted", "token.decrypt_failed"
+  eventType  String
   provider   String?
   message    String
-  context    Json?    // already-redacted structured context
+  context    Json?
   createdAt  DateTime @default(now())
 
   @@index([createdAt])
