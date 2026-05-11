@@ -1,46 +1,39 @@
 /**
- * /api/dashboard — single endpoint that aggregates the dashboard widgets.
- *
- * All five widgets fetch in parallel; one widget failing does not break the
- * others (Promise.allSettled). The response envelope is always ApiResponse<T>.
+ * /api/dashboard - aggregates all dashboard widgets.
+ * One widget failing does not break the others (Promise.allSettled).
+ * Accepts ?plz=<4, 6, or legacy 7 digits> to override the weather location.
  */
 import { Router } from 'express';
+import { z } from 'zod';
 import type { ApiResponse, DashboardSnapshot } from '@home-dashboard/shared';
 import { getWeather } from '../services/weatherService';
 import { getTrainConnections } from '../services/trainService';
-import { getTodoItems } from '../services/todoService';
-import { getGroceries } from '../services/bringService';
-import { getRunningStats } from '../services/stravaService';
 import { logger } from '../utils/logger';
+
+const QuerySchema = z.object({
+  plz: z.string().regex(/^\d{4}(\d{2}|\d{3})?$/).optional(),
+});
 
 export const dashboardRouter = Router();
 
-dashboardRouter.get('/', async (_req, res, next) => {
+dashboardRouter.get('/', async (req, res, next) => {
   try {
-    const [weather, trains, todos, groceries, running] = await Promise.allSettled([
-      getWeather(),
+    const parsedQuery = QuerySchema.safeParse(req.query);
+    const plzOverride = parsedQuery.success ? parsedQuery.data.plz : undefined;
+
+    const [weather, trains] = await Promise.allSettled([
+      getWeather(plzOverride),
       getTrainConnections(),
-      getTodoItems(),
-      getGroceries(),
-      getRunningStats(),
     ]);
 
     const failures: string[] = [];
     if (weather.status === 'rejected') failures.push('weather');
     if (trains.status === 'rejected') failures.push('trains');
-    if (todos.status === 'rejected') failures.push('todos');
-    if (groceries.status === 'rejected') failures.push('groceries');
-    if (running.status === 'rejected') failures.push('running');
-    if (failures.length) {
-      logger.warn('Dashboard', 'partial failure', { failures });
-    }
+    if (failures.length) logger.warn('Dashboard', 'partial failure', { failures });
 
     const data: DashboardSnapshot = {
       weather: weather.status === 'fulfilled' ? weather.value : null,
       trains: trains.status === 'fulfilled' ? trains.value : [],
-      todos: todos.status === 'fulfilled' ? todos.value : [],
-      groceries: groceries.status === 'fulfilled' ? groceries.value : [],
-      running: running.status === 'fulfilled' ? running.value : null,
       lastUpdated: new Date().toISOString(),
     };
 

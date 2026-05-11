@@ -5,6 +5,11 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
+# Prisma's schema-engine and query-engine need libssl at both generate-time
+# (here) and at runtime. Without these packages, Prisma falls back to a
+# libssl-1.1 binary that doesn't exist on Alpine 3.21 and crashes at startup.
+RUN apk add --no-cache openssl ca-certificates
+
 # Workspace package manifests first (better layer caching)
 COPY package.json package-lock.json* ./
 COPY packages/shared/package.json ./packages/shared/
@@ -29,7 +34,8 @@ WORKDIR /app
 
 # dumb-init makes SIGTERM from `docker compose down` reach Node cleanly
 # so the graceful shutdown handler in src/index.ts actually runs.
-RUN apk add --no-cache dumb-init
+# openssl + ca-certificates are required by the Prisma engine at runtime.
+RUN apk add --no-cache dumb-init openssl ca-certificates
 
 # Run as non-root user (defence in depth — OWASP A05)
 RUN addgroup -S app && adduser -S app -G app

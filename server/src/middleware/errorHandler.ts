@@ -49,10 +49,6 @@ export const errorHandler: ErrorRequestHandler = (
     status = 400;
     code = 'validation_error';
     message = 'Request failed validation';
-  } else if (err instanceof Error && err.message === 'invalid_state') {
-    status = 400;
-    code = 'invalid_state';
-    message = 'OAuth state mismatch';
   }
 
   logger.error('HTTP', `${req.method} ${req.path} -> ${status}`, {

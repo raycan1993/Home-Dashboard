@@ -1,31 +1,23 @@
 /**
- * Outbound HTTP client with security and observability built in.
- *
- * Security controls:
- *   - SSRF allowlist (OWASP A10): only the hostnames in ALLOWED_HOSTS may be
- *     called. Any service that wants to talk to a new external API must add
- *     its host here, in code, where it shows up in code review.
- *   - HTTPS-only (OWASP A02): http:// is rejected.
- *   - Hard timeout: prevents a slow upstream from holding sockets open.
- *   - Response size cap: defends against a malicious upstream returning gigabytes
- *     to OOM the process.
- *   - Redaction at log boundary (OWASP A09): tokens in headers/URLs never reach disk.
+ * Outbound HTTP client.
+ *  - SSRF allowlist (A10): only hostnames in ALLOWED_HOSTS may be called.
+ *  - HTTPS-only (A02): http:// is rejected.
+ *  - Hard timeout + response size cap.
+ *  - No redirects (defends against allowlisted host redirecting off-list).
+ *  - Redaction at log boundary (A09).
  */
-import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios from 'axios';
+import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { logger, redact } from './logger';
 
 const ALLOWED_HOSTS = new Set([
-  'api.open-meteo.com',
+  'app-prod-ws.meteoswiss-app.ch',
+  'api3.geo.admin.ch',
   'transport.opendata.ch',
-  'graph.microsoft.com',
-  'login.microsoftonline.com',
-  'api.getbring.com',
-  'www.strava.com',
-  'api.strava.com',
 ]);
 
 const DEFAULT_TIMEOUT_MS = 10_000;
-const MAX_RESPONSE_BYTES = 5 * 1024 * 1024; // 5 MiB
+const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
 function assertAllowed(rawUrl: string): URL {
   let parsed: URL;
@@ -35,16 +27,15 @@ function assertAllowed(rawUrl: string): URL {
     throw new Error('http: invalid URL');
   }
   if (parsed.protocol !== 'https:') {
-    throw new Error(`http: refusing non-HTTPS URL (${parsed.protocol})`);
+    throw new Error('http: refusing non-HTTPS URL (' + parsed.protocol + ')');
   }
   if (!ALLOWED_HOSTS.has(parsed.hostname)) {
-    throw new Error(`http: host not in allowlist (${parsed.hostname})`);
+    throw new Error('http: host not in allowlist (' + parsed.hostname + ')');
   }
   return parsed;
 }
 
 interface RequestOptions extends Omit<AxiosRequestConfig, 'url' | 'method'> {
-  /** Per-call override; default 10s. */
   timeoutMs?: number;
 }
 
@@ -57,13 +48,11 @@ async function request<T>(
 ): Promise<T> {
   assertAllowed(url);
   const start = Date.now();
-
-  logger.log('debug', 'OUT', service, `${method} ${url}`, {
+  logger.log('debug', 'OUT', service, method + ' ' + url, {
     url,
     method,
     payload: body ?? opts?.params,
   });
-
   try {
     const response: AxiosResponse<T> = await axios.request<T>({
       url,
@@ -72,16 +61,12 @@ async function request<T>(
       timeout: opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       maxContentLength: MAX_RESPONSE_BYTES,
       maxBodyLength: MAX_RESPONSE_BYTES,
-      // Reject redirects to non-allowlisted hosts. We disable axios's default
-      // redirect-following entirely — services that need redirects can set
-      // maxRedirects in opts after they've thought about it.
       maxRedirects: 0,
       validateStatus: (s) => s >= 200 && s < 300,
       ...opts,
     });
-
     const duration = Date.now() - start;
-    logger.log('info', 'IN', service, `${method} ${url} → ${response.status}`, {
+    logger.log('info', 'IN', service, method + ' ' + url + ' -> ' + response.status, {
       url,
       method,
       statusCode: response.status,
@@ -92,7 +77,7 @@ async function request<T>(
   } catch (err) {
     const duration = Date.now() - start;
     const ax = err as AxiosError;
-    logger.log('error', 'IN', service, `${method} ${url} FAILED`, {
+    logger.log('error', 'IN', service, method + ' ' + url + ' FAILED', {
       url,
       method,
       statusCode: ax.response?.status,

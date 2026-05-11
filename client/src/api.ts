@@ -1,12 +1,9 @@
 // Type-safe API client. All responses are unwrapped from ApiResponse<T>.
-//
-// Why fetch and not axios: one less dependency on the client, and we don't
-// need axios's features here. `credentials: 'same-origin'` is the default but
-// stated explicitly to flag intent.
 import type {
   ApiResponse,
   ConnectionStatus,
   DashboardSnapshot,
+  WeatherLocation,
 } from '@home-dashboard/shared';
 
 class ApiError extends Error {
@@ -32,9 +29,22 @@ async function call<T>(path: string): Promise<T> {
   return body.data;
 }
 
+interface DashboardOpts {
+  plz?: string;
+}
+
+function buildDashboardUrl(opts: DashboardOpts | undefined): string {
+  const params = new URLSearchParams();
+  if (opts?.plz) params.set('plz', opts.plz);
+  const qs = params.toString();
+  return qs.length ? '/api/dashboard?' + qs : '/api/dashboard';
+}
+
 export const api = {
   health: () => call<ConnectionStatus>('/api/health'),
-  dashboard: () => call<DashboardSnapshot>('/api/dashboard'),
+  dashboard: (opts?: DashboardOpts) => call<DashboardSnapshot>(buildDashboardUrl(opts)),
+  weatherSearch: (q: string) =>
+    call<WeatherLocation[]>('/api/weather/search?q=' + encodeURIComponent(q)),
 };
 
 export { ApiError };

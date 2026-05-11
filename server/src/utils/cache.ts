@@ -4,7 +4,7 @@
  * Security notes:
  *   - The `key` parameter is validated against a strict regex
  *     (OWASP A03: Injection — defence in depth on top of Prisma's parameterisation).
- *   - The cached `data` is JSON-serialised; we never cache OAuth tokens here.
+ *   - The cached `data` is JSON-serialised response data.
  *   - Errors degrade silently (return null) — callers proceed without cache,
  *     so a corrupted cache row never breaks the dashboard.
  */

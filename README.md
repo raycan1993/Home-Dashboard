@@ -1,145 +1,72 @@
 # Home Dashboard
 
-Personal dashboard showing weather, train connections (Winterthur → Zürich), Microsoft Todo, Bring groceries, and Strava running stats. Single-user, runs on your machine, accessed at `http://localhost:8080`.
+Personal dashboard showing weather and train connections. Single-user, runs on your machine, and is served at `http://localhost:8080` by default.
 
-## Status — Docker MVP
-
-What you can run today, end-to-end, with one command:
-
-```powershell
-docker compose up -d --build
-```
-
-What this gives you:
-- Weather (Open-Meteo, no API key)
-- Train connections (SBB OpenData, no API key)
-- Microsoft Todo, Strava, Bring — show as "not connected" pills until you complete the OAuth flow for each (optional)
-- One dashboard page polling every 60 seconds
-
-Not in the MVP (planned, not blocking the MVP):
-- In-app login (JWT). The dashboard relies on the OS user account + loopback-only binding instead.
-- Frontend split into `pages/`, `components/`, `hooks/` — still a single `App.tsx`.
-- Dev mode UI panel (the server already exposes an SSE log stream at `/api/dev/logs/stream` when `DEVELOPER_MODE=true`; no UI yet).
-
-## Quick start
+## Quick Start
 
 Prerequisite: Docker Desktop for Windows.
 
 ```powershell
-# 1. Configure
 Copy-Item .env.example .env
 notepad .env
-#    - set DB_PASSWORD to anything strong
-#    - generate TOKEN_ENC_KEY:
-#      $b=New-Object byte[] 32; [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b); [Convert]::ToBase64String($b)
-#    - paste the output as TOKEN_ENC_KEY
-
-# 2. Start
 docker compose up -d --build
-
-# 3. Open
 start http://localhost:8080
 ```
 
-To use port 80 instead of 8080, set `WEB_PORT=80` and `PUBLIC_URL=http://localhost` in `.env`.
+Required configuration:
 
-Day-to-day commands:
+- `DB_PASSWORD`: password for the local Postgres app user.
+
+Optional configuration:
+
+- `WEATHER_PLZ`, `WEATHER_CITY`
+- `SBB_FROM`, `SBB_TO`, `SBB_NUM_CONNECTIONS`
+- `WEB_PORT`, `PUBLIC_URL`
+- `DEVELOPER_MODE`, `LOG_LEVEL`
+
+## Features
+
+- Weather from MeteoSwiss, including location search by Swiss city or postcode.
+- Train connections from transport.opendata.ch / SBB data.
+- Compact responsive dashboard layout.
+- Static training page remains available, but no Strava integration is active.
+
+## Architecture
+
+```text
+Browser -> web (nginx) -> server (Express) -> db (Postgres)
+```
+
+- `web`: serves the React SPA and reverse-proxies `/api` to the server.
+- `server`: exposes `/api/health`, `/api/dashboard`, `/api/weather`, and `/api/dev`.
+- `db`: stores response-cache entries for weather and train data.
+
+The removed Microsoft Todo, Bring, Strava, calendar, and OAuth routes are not mounted.
+
+## Useful Commands
 
 | Action | Command |
 | --- | --- |
 | Start | `docker compose up -d` |
 | Stop | `docker compose down` |
-| Restart after editing `.env` | `docker compose down && docker compose up -d` |
-| Live logs | `docker compose logs -f` |
-| Rebuild after code change | `docker compose up -d --build` |
-| Wipe everything including DB | `docker compose down -v` |
+| Rebuild | `docker compose up -d --build` |
+| Logs | `docker compose logs -f` |
+| Wipe local DB volume | `docker compose down -v` |
 
-OAuth setup for Microsoft / Strava / Bring is documented in `SETUP_GUIDE.md` (in the `outputs/dockerized` folder from the Claude sessions, or copy that file in once you want those widgets).
+## Repository Shape
 
-## Architecture
-
-Three containers on a private Docker bridge network:
-
-```
-┌─ Host machine (loopback only) ───────────────────────────────────┐
-│                                                                  │
-│  Browser ──► web (nginx) ──► server (Express) ──► db (Postgres)  │
-│   :8080         :80              :3001                :5432      │
-│   bound to   only `web`       only `web`     only the network    │
-│   127.0.0.1  publishes a       reaches it    sees it             │
-│              port                                                │
-└──────────────────────────────────────────────────────────────────┘
+```text
+packages/shared/src/index.ts  Shared API types
+server/src/routes             health, dashboard, weather, dev
+server/src/services           weather and train services
+server/src/utils              logger, HTTP client, cache, Prisma helper
+client/src/components         dashboard widgets
+client/src/hooks              dashboard polling hook
 ```
 
-- `web` (nginx) — serves the built React SPA, reverse-proxies `/api` to `server`. Only container with a host-published port (`127.0.0.1:8080:80`).
-- `server` (Express) — REST API at `/api/health`, `/api/dashboard`, `/api/oauth/*`, `/api/dev/*`. Runs as a non-root user. Uses Prisma for DB access.
-- `db` (Postgres 16) — named volume `db_data` for persistence. No host port published. Reachable only from `server`.
+## Security Notes
 
-External services (Open-Meteo, SBB, Microsoft Graph, Strava, Bring) are called outbound from `server` through an HTTPS host allowlist (`src/utils/httpClient.ts`). All upstream JSON is validated with Zod before use.
-
-## Tech stack
-
-- **Backend**: Node.js 20, Express 4, Prisma 5, Zod 3, Helmet 7, express-rate-limit 7
-- **Database**: PostgreSQL 16 (Alpine)
-- **Frontend**: React 18, Vite 5, Tailwind 3
-- **Reverse proxy**: nginx 1.27 (Alpine)
-- **Runtime**: Docker Compose v2
-
-## Folder structure
-
-```
-home-dashboard/
-├── docker-compose.yml          # Three-service stack: db, server, web
-├── .env.example                # Docker-level config (DB_PASSWORD, TOKEN_ENC_KEY, etc.)
-├── .dockerignore
-├── package.json                # npm workspaces root
-├── packages/shared/            # Shared TypeScript types (no runtime code)
-├── server/
-│   ├── Dockerfile              # Multi-stage: build → non-root runtime
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── prisma/schema.prisma    # OAuthToken, OAuthState, CacheEntry, AuditEvent
-│   └── src/
-│       ├── index.ts            # Express bootstrap + graceful shutdown
-│       ├── config/env.ts       # Zod-validated env loader
-│       ├── middleware/         # helmet+CSP, CORS, rate limits, error handler, request logger
-│       ├── routes/             # health, dashboard, oauth (MS/Strava), dev (SSE)
-│       ├── services/           # weather, trains, todo, bring, strava
-│       └── utils/              # crypto (AES-256-GCM), logger (redacting),
-│                                 httpClient (SSRF allowlist), cache, tokenStore
-└── client/
-    ├── Dockerfile              # Vite build → nginx serve
-    ├── nginx.conf              # SPA fallback + /api reverse proxy + security headers
-    ├── package.json
-    ├── tsconfig.json
-    └── src/                    # App.tsx, api.ts, main.tsx, index.css
-```
-
-## Security posture (short version)
-
-The full mapping to OWASP Top 10 with file pointers lives in `SECURITY_SETUP.md`. The short version:
-
-- **Tokens at rest**: OAuth refresh tokens are wrapped in AES-256-GCM (`server/src/utils/crypto.ts`). The key (`TOKEN_ENC_KEY`) is stored in `.env`, not in the database — both must leak together to recover anything.
-- **Network exposure**: the `web` container's port is bound to `127.0.0.1` — invisible to the LAN. The `server` and `db` containers publish no host ports at all; they're only reachable through Docker's private bridge network.
-- **Outbound SSRF defence**: the HTTP client refuses any host outside an explicit allowlist (Open-Meteo, SBB, Microsoft Graph, Strava, Bring). HTTPS-only, hard timeouts, response size cap, redirects disabled.
-- **Input/output validation**: every external API response is validated against a Zod schema before use. Cache keys and OAuth list IDs are bounded by regex.
-- **OAuth CSRF**: each callback verifies a server-minted, single-use `state` value with `crypto.timingSafeEqual`.
-- **Logging**: structured logger redacts authorization headers, OAuth codes, and any key matching `password|secret|token|api_key|refresh|access` before anything reaches disk or the SSE stream.
-- **Defaults**: Helmet + strict CSP; single-origin CORS; per-route rate limits (60/min API, 10/15min OAuth); error handler never leaks stack traces; server runs as non-root inside its container.
-
-## Configuration reference
-
-All settings live in `.env` (root). The full list is in `.env.example`. The only required ones are `DB_PASSWORD` and `TOKEN_ENC_KEY`; everything else has working defaults or is for optional widgets.
-
-## Troubleshooting
-
-| Symptom | Fix |
-| --- | --- |
-| `Ports are not available: ... :8080` | Set `WEB_PORT=8090` (or any free port) in `.env`, then restart. |
-| `server` container restarting | `docker compose logs server` — usually a missing or too-short `TOKEN_ENC_KEY`. Re-generate (32 bytes base64). |
-| OAuth callback says "redirect URI mismatch" | The URI in your Azure / Strava app must match `${PUBLIC_URL}/api/oauth/<service>/callback` exactly, including the port. |
-| Forgot DB password, want to start over | `docker compose down -v` (the `-v` deletes the volume), then edit `.env` and `docker compose up -d --build`. |
-
-## License
-
-Personal project. Not licensed for redistribution.
+- The published web port is bound to `127.0.0.1` in Docker Compose.
+- The API only calls allowlisted HTTPS upstream hosts.
+- Upstream responses are validated with Zod before use.
+- Logs redact sensitive-looking keys at the logger boundary.

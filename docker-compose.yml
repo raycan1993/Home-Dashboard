@@ -1,12 +1,9 @@
-# Home Dashboard — full local stack.
+# Home Dashboard - full local stack.
 #
 # Three containers on a private Docker bridge network:
-#   db      — PostgreSQL 16, NO host port published (security: not reachable from LAN)
-#   server  — Node/Express API, NO host port published (only `web` can reach it)
-#   web     — nginx serving the built React SPA + reverse-proxying /api → server
-#
-# Only `web` publishes a port, and it's bound to 127.0.0.1 — so the dashboard
-# is reachable from your machine only, not from other devices on your network.
+#   db      - PostgreSQL 16, not reachable from the host network
+#   server  - Node/Express API, reachable only by web
+#   web     - nginx serving the React SPA and proxying /api to server
 
 services:
   db:
@@ -23,7 +20,6 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
-    # No ports block on purpose — only reachable inside the docker network.
 
   server:
     build:
@@ -31,35 +27,21 @@ services:
       dockerfile: server/Dockerfile
     environment:
       DATABASE_URL: postgresql://home_dashboard_app:${DB_PASSWORD}@db:5432/home_dashboard?sslmode=disable
-      TOKEN_ENC_KEY: ${TOKEN_ENC_KEY:?set TOKEN_ENC_KEY in .env}
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: "3001"
       CORS_ORIGIN: ${PUBLIC_URL:-http://localhost:8080}
-      WEATHER_LATITUDE: ${WEATHER_LATITUDE:-47.5022}
-      WEATHER_LONGITUDE: ${WEATHER_LONGITUDE:-8.7386}
+      WEATHER_PLZ: ${WEATHER_PLZ:-8400000}
       WEATHER_CITY: ${WEATHER_CITY:-Winterthur}
       SBB_FROM: ${SBB_FROM:-Winterthur}
       SBB_TO: ${SBB_TO:-Zürich HB}
       SBB_NUM_CONNECTIONS: ${SBB_NUM_CONNECTIONS:-5}
-      MS_CLIENT_ID: ${MS_CLIENT_ID:-}
-      MS_CLIENT_SECRET: ${MS_CLIENT_SECRET:-}
-      MS_TENANT_ID: ${MS_TENANT_ID:-common}
-      MS_REDIRECT_URI: ${PUBLIC_URL:-http://localhost:8080}/api/oauth/microsoft/callback
-      MS_TODO_LIST_ID: ${MS_TODO_LIST_ID:-}
-      STRAVA_CLIENT_ID: ${STRAVA_CLIENT_ID:-}
-      STRAVA_CLIENT_SECRET: ${STRAVA_CLIENT_SECRET:-}
-      STRAVA_REDIRECT_URI: ${PUBLIC_URL:-http://localhost:8080}/api/oauth/strava/callback
-      BRING_EMAIL: ${BRING_EMAIL:-}
-      BRING_PASSWORD: ${BRING_PASSWORD:-}
-      BRING_LIST_UUID: ${BRING_LIST_UUID:-}
       DEVELOPER_MODE: ${DEVELOPER_MODE:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
-    # No ports block — only reachable from `web`.
 
   web:
     build:
@@ -67,8 +49,6 @@ services:
       dockerfile: client/Dockerfile
     ports:
       - "127.0.0.1:${WEB_PORT:-8080}:80"
-      # The 127.0.0.1: prefix binds the port to loopback only. Drop it
-      # to expose to the LAN — only do that if you've added auth.
     depends_on:
       - server
     restart: unless-stopped

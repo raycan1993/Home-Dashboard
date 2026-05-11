@@ -1,8 +1,10 @@
-// Prisma schema — single-user, no in-app auth.
-// Tokens are stored as ciphertext (AES-256-GCM); see server/src/utils/crypto.ts.
+// Prisma schema - single-user dashboard.
+// The remaining upstream integrations (weather and trains) use only
+// Postgres-backed response caching.
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -10,26 +12,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ------------------------------------------------------------
-// OAuthToken — encrypted refresh/access tokens for upstream services.
-// ------------------------------------------------------------
-model OAuthToken {
-  id                  String   @id @default(cuid())
-  provider            String   @unique // "microsoft" | "strava" | "bring"
-  accessTokenCipher   String
-  refreshTokenCipher  String?
-  expiresAt           DateTime?
-  scope               String?
-  metadata            Json?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  @@map("oauth_tokens")
-}
-
-// ------------------------------------------------------------
-// CacheEntry — Postgres-backed response cache. JSON only; no secrets.
-// ------------------------------------------------------------
 model CacheEntry {
   id        String   @id @default(cuid())
   key       String   @unique
@@ -39,34 +21,4 @@ model CacheEntry {
 
   @@index([expiresAt])
   @@map("cache_entries")
-}
-
-// ------------------------------------------------------------
-// OAuthState — CSRF defence for OAuth callbacks. Single-use, 10-min TTL.
-// ------------------------------------------------------------
-model OAuthState {
-  id         String   @id @default(cuid())
-  state      String   @unique
-  provider   String
-  createdAt  DateTime @default(now())
-  expiresAt  DateTime
-
-  @@index([expiresAt])
-  @@map("oauth_states")
-}
-
-// ------------------------------------------------------------
-// AuditEvent — security telemetry. Append-only by convention.
-// ------------------------------------------------------------
-model AuditEvent {
-  id         String   @id @default(cuid())
-  eventType  String
-  provider   String?
-  message    String
-  context    Json?
-  createdAt  DateTime @default(now())
-
-  @@index([createdAt])
-  @@index([eventType])
-  @@map("audit_events")
 }

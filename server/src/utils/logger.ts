@@ -45,7 +45,7 @@ const SENSITIVE_KEY_SUBSTRINGS = [
   'session',
   'refresh',
   'access',
-  'code', // OAuth authorization codes
+  'code',
   'client_secret',
 ];
 

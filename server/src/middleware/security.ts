@@ -16,7 +16,7 @@ export function applySecurity(app: Application): void {
 
   app.use(
     helmet({
-      // CSP — applied to any HTML the API serves (e.g. error pages, OAuth landings).
+      // CSP applied to any HTML the API serves, such as error pages.
       contentSecurityPolicy: {
         useDefaults: true,
         directives: {
