@@ -6,6 +6,15 @@
 // ------------------------------------------------------------
 // WEATHER
 // ------------------------------------------------------------
+export interface WeatherForecastDay {
+  /** "Mon", "Tue", ... — formatted server-side in the user's locale. */
+  day: string;
+  /** Stable icon name (clear-day, partly-cloudy, rain, ...). */
+  icon: string;
+  high: number;
+  low: number;
+}
+
 export interface WeatherData {
   temperature: number;
   feelsLike: number;
@@ -18,6 +27,8 @@ export interface WeatherData {
   sunset: number;
   high: number;
   low: number;
+  /** Next ~4 days. May be empty if the upstream call partially fails. */
+  forecast: WeatherForecastDay[];
 }
 
 // ------------------------------------------------------------
