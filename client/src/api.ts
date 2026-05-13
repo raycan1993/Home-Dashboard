@@ -49,7 +49,7 @@ export const api = {
     const params = new URLSearchParams();
     if (plz) params.set('plz', plz);
     const qs = params.toString();
-    return call<string[]>(qs ? `/api/rocky?${qs}` : '/api/rocky');
+    return call<string[]>(qs ? '/api/rocky?' + qs : '/api/rocky');
   },
 };
 
