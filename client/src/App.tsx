@@ -13,9 +13,7 @@ type Tab = (typeof TABS)[number];
 const PLZ_STORAGE_KEY = 'home-dashboard:plz';
 
 function normalizeStoredPlz(stored: string | null): string | undefined {
-  if (!stored || !/^\d{4}(\d{2}|\d{3})?$/.test(stored)) return undefined;
-  if (stored.length === 4) return stored + '00';
-  if (stored.length === 7) return stored.slice(0, 6);
+  if (!stored || !/^\d{4}$/.test(stored)) return undefined;
   return stored;
 }
 

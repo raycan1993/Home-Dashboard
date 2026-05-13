@@ -31,7 +31,7 @@ services:
       HOST: 0.0.0.0
       PORT: "3001"
       CORS_ORIGIN: ${PUBLIC_URL:-http://localhost:8080}
-      WEATHER_PLZ: ${WEATHER_PLZ:-8400000}
+      WEATHER_PLZ: ${WEATHER_PLZ:-8400}
       WEATHER_CITY: ${WEATHER_CITY:-Winterthur}
       SBB_FROM: ${SBB_FROM:-Winterthur}
       SBB_TO: ${SBB_TO:-Zürich HB}

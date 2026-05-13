@@ -102,7 +102,7 @@ All settings have built-in defaults. You only need a `.env` file if you want to 
 | Variable | Default | Description |
 |---|---|---|
 | `DB_PASSWORD` | `home_dashboard_secret` | PostgreSQL password for the app user |
-| `WEATHER_PLZ` | `8400000` | Swiss postcode (6-digit) for the default weather location |
+| `WEATHER_PLZ` | `8400` | 4-digit Swiss postal code for the default weather location |
 | `WEATHER_CITY` | `Winterthur` | Display name for the default location |
 | `SBB_FROM` | `Winterthur` | Departure station for train connections |
 | `SBB_TO` | `Zürich HB` | Destination station |
