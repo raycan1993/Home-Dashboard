@@ -6,6 +6,7 @@ import { WeatherCard } from './components/WeatherCard';
 import { TrainConnections } from './components/TrainConnections';
 import { WeeklyTrainingPlan } from './components/WeeklyTrainingPlan';
 import { TrainingKPIs } from './components/TrainingKPIs';
+import { RockyAssistant } from './components/RockyAssistant';
 
 const TABS = ['Overview', 'Training'] as const;
 type Tab = (typeof TABS)[number];
@@ -74,6 +75,7 @@ export function App() {
             lastUpdated={lastUpdated}
             onRefresh={refresh}
             onSelectLocation={onSelectLocation}
+            selectedPlz={selectedPlz}
           />
         ) : (
           <TrainingPage />
@@ -89,18 +91,27 @@ function OverviewPage({
   lastUpdated,
   onRefresh,
   onSelectLocation,
+  selectedPlz,
 }: {
   weather: WeatherData | null;
   trains: TrainConnection[];
   lastUpdated: Date | null;
   onRefresh: () => void;
   onSelectLocation: (plz: string, label: string) => void;
+  selectedPlz: string | undefined;
 }) {
   return (
     <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 lg:grid-cols-2">
-      <div className="min-h-[260px] lg:min-h-0 [&>*]:h-full">
-        <WeatherCard weather={weather} onSelectLocation={onSelectLocation} />
+      {/* Left column: Weather on top, Rocky below */}
+      <div className="flex flex-col gap-2 min-h-0 lg:h-full">
+        <div className="min-h-[220px] flex-1 lg:min-h-0 [&>*]:h-full">
+          <WeatherCard weather={weather} onSelectLocation={onSelectLocation} />
+        </div>
+        <div className="flex-shrink-0">
+          <RockyAssistant plz={selectedPlz} />
+        </div>
       </div>
+      {/* Right column: Train connections full height */}
       <div className="min-h-[260px] lg:min-h-0 [&>*]:h-full">
         <TrainConnections trains={trains} onRefresh={onRefresh} lastUpdated={lastUpdated} />
       </div>

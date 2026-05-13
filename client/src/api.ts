@@ -45,6 +45,12 @@ export const api = {
   dashboard: (opts?: DashboardOpts) => call<DashboardSnapshot>(buildDashboardUrl(opts)),
   weatherSearch: (q: string) =>
     call<WeatherLocation[]>('/api/weather/search?q=' + encodeURIComponent(q)),
+  rocky: (plz?: string) => {
+    const params = new URLSearchParams();
+    if (plz) params.set('plz', plz);
+    const qs = params.toString();
+    return call<string[]>(qs ? `/api/rocky?${qs}` : '/api/rocky');
+  },
 };
 
 export { ApiError };

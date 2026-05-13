@@ -10,7 +10,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: home_dashboard_app
-      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-home_dashboard_secret}
       POSTGRES_DB: home_dashboard
     volumes:
       - db_data:/var/lib/postgresql/data
@@ -26,7 +26,7 @@ services:
       context: .
       dockerfile: server/Dockerfile
     environment:
-      DATABASE_URL: postgresql://home_dashboard_app:${DB_PASSWORD}@db:5432/home_dashboard?sslmode=disable
+      DATABASE_URL: postgresql://home_dashboard_app:${DB_PASSWORD:-home_dashboard_secret}@db:5432/home_dashboard?sslmode=disable
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: "3001"

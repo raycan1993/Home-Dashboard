@@ -18,6 +18,7 @@ import { healthRouter } from './routes/health';
 import { dashboardRouter } from './routes/dashboard';
 import { weatherRouter } from './routes/weather';
 import { devRouter } from './routes/dev';
+import { rockyRouter } from './routes/rocky';
 import { prisma } from './utils/prisma';
 import { logger } from './utils/logger';
 import { cachePurgeExpired } from './utils/cache';
@@ -37,6 +38,7 @@ async function bootstrap(): Promise<void> {
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/weather', weatherRouter);
   app.use('/api/dev', devRouter);
+  app.use('/api/rocky', rockyRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
