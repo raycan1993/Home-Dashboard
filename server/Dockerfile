@@ -26,6 +26,7 @@ COPY server ./server
 
 # Generate Prisma client + compile TypeScript
 RUN npx --workspace=server prisma generate
+RUN npm run build --workspace=packages/shared
 RUN npm run build --workspace=server
 
 # ---------- Runtime ----------

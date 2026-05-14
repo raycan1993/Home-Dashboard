@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
+import { useLang, tr } from '../i18n';
 
 const CYCLE_MS = 10_000;    // rotate message every 10 s
 const REFETCH_MS = 5 * 60_000; // re-fetch pool every 5 min
@@ -95,9 +96,11 @@ function RockySvg() {
 
 interface Props {
   plz?: string;
+  devMessages?: string[];
 }
 
-export function RockyAssistant({ plz }: Props) {
+export function RockyAssistant({ plz, devMessages }: Props) {
+  const lang = useLang();
   const [messages, setMessages] = useState<string[]>([]);
   const [idx, setIdx]           = useState(0);
   const [visible, setVisible]   = useState(true);
@@ -106,6 +109,7 @@ export function RockyAssistant({ plz }: Props) {
   const swapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchMessages = useCallback(async () => {
+    if (devMessages) return;
     try {
       const msgs = await api.rocky(plz);
       if (msgs.length > 0) {
@@ -115,17 +119,25 @@ export function RockyAssistant({ plz }: Props) {
         setFetchError(null);
       }
     } catch (e) {
-      setFetchError(e instanceof ApiError ? e.message : 'Rocky offline. Possibly napping.');
+      setFetchError(e instanceof ApiError ? e.message : tr(lang, 'rockyOffline'));
     } finally {
       setLoading(false);
     }
-  }, [plz]);
+  }, [devMessages, plz]);
 
   useEffect(() => {
+    if (devMessages) {
+      setMessages(devMessages);
+      setIdx(0);
+      setVisible(true);
+      setLoading(false);
+      setFetchError(null);
+      return;
+    }
     void fetchMessages();
     const id = setInterval(() => void fetchMessages(), REFETCH_MS);
     return () => clearInterval(id);
-  }, [fetchMessages]);
+  }, [devMessages, fetchMessages]);
 
   useEffect(() => {
     if (messages.length < 2) return;
@@ -145,9 +157,9 @@ export function RockyAssistant({ plz }: Props) {
   const currentMessage = messages[idx] ?? null;
 
   return (
-    <div className="rounded-2xl border border-slate-700/50 bg-slate-800/60 px-3 py-2.5">
-      <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
-        Rocky the Assistant
+    <div className="rounded-2xl border border-zinc-700/50 bg-zinc-800/60 px-3 py-2.5">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+        {tr(lang, 'rockyTitle')}
       </div>
 
       <div className="flex items-center gap-3 min-h-[104px]">
@@ -157,17 +169,17 @@ export function RockyAssistant({ plz }: Props) {
 
         <div className="relative flex-1 min-w-0">
           <div
-            className="absolute -left-2 top-1/2 -translate-y-1/2 h-0 w-0"
+            className="absolute -left-2 top-1/2 -tranzinc-y-1/2 h-0 w-0"
             style={{
               borderTop:    '7px solid transparent',
               borderBottom: '7px solid transparent',
               borderRight:  '9px solid rgba(51,65,85,0.7)',
             }}
           />
-          <div className="rounded-2xl rounded-tl-sm border border-slate-600/50 bg-slate-900/70 px-3.5 py-3 shadow-inner">
+          <div className="rounded-2xl rounded-tl-sm border border-zinc-600/50 bg-zinc-900/70 px-3.5 py-3 shadow-inner">
             {loading && (
-              <p className="text-[12px] italic text-slate-500">
-                Rocky is analyzing atmosphere...
+              <p className="text-[12px] italic text-zinc-500">
+                {tr(lang, 'rockyLoading')}
               </p>
             )}
             {!loading && fetchError && (
@@ -175,7 +187,7 @@ export function RockyAssistant({ plz }: Props) {
             )}
             {!loading && !fetchError && currentMessage && (
               <p
-                className="text-[12.5px] leading-relaxed text-slate-100"
+                className="text-[12.5px] leading-relaxed text-zinc-100"
                 style={{
                   opacity:    visible ? 1 : 0,
                   transition: `opacity ${FADE_MS}ms ease-in-out`,

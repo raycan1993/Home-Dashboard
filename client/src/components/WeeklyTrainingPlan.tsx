@@ -7,7 +7,7 @@ import { trainingPlan, todayIdx } from '../mockData';
 function typeColor(type: 'Strength' | 'Cardio' | 'Rest'): string {
   if (type === 'Strength') return 'text-amber-400 bg-amber-400/10 border-amber-400/30';
   if (type === 'Cardio') return 'text-sky-400 bg-sky-400/10 border-sky-400/30';
-  return 'text-slate-400 bg-slate-400/10 border-slate-400/30';
+  return 'text-zinc-400 bg-zinc-400/10 border-zinc-400/30';
 }
 
 export function WeeklyTrainingPlan() {
@@ -24,16 +24,16 @@ export function WeeklyTrainingPlan() {
               className={
                 'flex items-center gap-4 p-3 rounded-xl border transition-colors ' +
                 (isToday
-                  ? 'bg-slate-700/60 border-sky-500/30'
+                  ? 'bg-zinc-700/60 border-sky-500/30'
                   : session.done
-                    ? 'bg-slate-900/30 border-slate-700/20 opacity-60'
-                    : 'bg-slate-900/40 border-slate-700/30')
+                    ? 'bg-zinc-900/30 border-zinc-700/20 opacity-60'
+                    : 'bg-zinc-900/40 border-zinc-700/30')
               }
             >
               <div
                 className={
                   'w-10 text-center text-[11px] font-bold ' +
-                  (isToday ? 'text-sky-400' : 'text-slate-500')
+                  (isToday ? 'text-sky-400' : 'text-zinc-500')
                 }
               >
                 {session.day}
@@ -48,9 +48,9 @@ export function WeeklyTrainingPlan() {
                 {session.type}
               </span>
               <div className="flex-1">
-                <div className="text-sm text-slate-200">{session.label}</div>
+                <div className="text-sm text-zinc-200">{session.label}</div>
                 {(session.sets || session.duration) && (
-                  <div className="text-[11px] text-slate-500">
+                  <div className="text-[11px] text-zinc-500">
                     {session.sets ?? session.duration}
                   </div>
                 )}
@@ -68,7 +68,7 @@ export function WeeklyTrainingPlan() {
                   </svg>
                 </div>
               ) : (
-                <div className="w-5 h-5 rounded-full border border-slate-600" />
+                <div className="w-5 h-5 rounded-full border border-zinc-600" />
               )}
             </div>
           );

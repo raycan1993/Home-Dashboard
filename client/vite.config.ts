@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import path from 'node:path';
 
 // Vite dev server config.
 //
@@ -9,6 +10,11 @@ import react from '@vitejs/plugin-react';
 // the production-equivalent CORS allowlist.
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@home-dashboard/shared': path.resolve(__dirname, '../packages/shared/src'),
+    },
+  },
   server: {
     host: '127.0.0.1',
     port: 5173,

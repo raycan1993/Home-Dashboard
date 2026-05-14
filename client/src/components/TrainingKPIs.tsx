@@ -6,7 +6,7 @@ import { kpis } from '../mockData';
 function trendColor(trend: 'up' | 'down' | 'neutral'): string {
   if (trend === 'up') return 'text-emerald-400';
   if (trend === 'down') return 'text-rose-400';
-  return 'text-slate-500';
+  return 'text-zinc-500';
 }
 
 export function TrainingKPIs() {
@@ -16,7 +16,7 @@ export function TrainingKPIs() {
       <div className="grid grid-cols-3 gap-3">
         {kpis.map((k) => (
           <Card key={k.label} className="flex flex-col gap-1">
-            <div className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">
+            <div className="text-[11px] text-zinc-500 uppercase tracking-wider font-medium">
               {k.label}
             </div>
             <div className="text-2xl font-semibold text-white">{k.value}</div>

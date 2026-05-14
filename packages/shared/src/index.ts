@@ -22,11 +22,54 @@ export interface WeatherLocation {
   label: string;
 }
 
+export const WeatherPattern = {
+  Sunny: 'sunny',
+  MostlySunny: 'mostly-sunny',
+  PartlyCloudy: 'partly-cloudy',
+  Cloudy: 'cloudy',
+  Overcast: 'overcast',
+  LightRain: 'light-rain',
+  Rain: 'rain',
+  HeavyRain: 'heavy-rain',
+  Thunderstorm: 'thunderstorm',
+  Snow: 'snow',
+  Sleet: 'sleet',
+  Fog: 'fog',
+  LowStratus: 'low-stratus',
+  Windy: 'windy',
+  Hail: 'hail',
+  ClearNight: 'clear-night',
+  PartlyCloudyNight: 'partly-cloudy-night',
+  Unknown: 'unknown',
+} as const;
+
+export type WeatherPattern = (typeof WeatherPattern)[keyof typeof WeatherPattern];
+
+export interface WeatherPatternDebug {
+  rawApiResponse?: unknown;
+  detectedCode?: number | null;
+  mappedPattern: WeatherPattern;
+  selectedIcon: string;
+  fallbackReason?: string | null;
+  lastUpdated: string;
+  isNight: boolean;
+}
+
 export interface WeatherData {
   temperature: number;
   feelsLike: number;
   description: string;
   icon: string;
+  weatherCode?: number | null;
+  pattern?: WeatherPattern;
+  patternLabel?: string;
+  patternFallbackReason?: string | null;
+  patternDebug?: WeatherPatternDebug;
+  isNight?: boolean;
+  uvIndex?: number | null;
+  snowLine?: number | null;
+  thunderstormRisk?: number | null;
+  fogRisk?: number | null;
   humidity: number;
   windSpeed: number;
   location: string;
@@ -37,6 +80,13 @@ export interface WeatherData {
   low: number;
   hourly: WeatherHour[];
   daily: WeatherDay[];
+  precip10m?: { time: string; value: number }[];
+}
+
+// STATION SEARCH ----------------------------------------------------------
+export interface StationLocation {
+  id: string;
+  name: string;
 }
 
 // TRAIN -------------------------------------------------------------------
@@ -56,6 +106,7 @@ export interface TrainConnection {
   delay: number;
   cancelled: boolean;
   transfers: number;
+  legDurations?: number[];
 }
 
 // CONNECTION STATUS -------------------------------------------------------

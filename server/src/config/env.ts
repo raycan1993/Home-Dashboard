@@ -39,7 +39,7 @@ const EnvSchema = z.object({
 
   SBB_FROM: z.string().default('Winterthur'),
   SBB_TO: z.string().default('Zürich HB'),
-  SBB_NUM_CONNECTIONS: z.coerce.number().int().min(1).max(20).default(5),
+  SBB_NUM_CONNECTIONS: z.coerce.number().int().min(1).max(20).default(15).transform((n) => Math.max(15, n)),
 
   DEVELOPER_MODE: z
     .enum(['true', 'false'])
