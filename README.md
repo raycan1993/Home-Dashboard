@@ -21,21 +21,13 @@ Home Dashboard is a compact web application that aggregates real-time data from 
 
 ## Architecture
 
-```
-Browser
-  └─► web  (nginx, port 8080)
-        ├── serves the React SPA (static files)
-        └── /api  ──► server  (Node/Express, port 3001)
-                         ├── /api/weather    → MeteoSwiss app API
-                         ├── /api/dashboard  → weather + trains combined
-                         ├── /api/rocky      → weather-contextual Rocky messages
-                         └── /api/health     → status check
-                                │
-                               db  (PostgreSQL 16, internal only)
-                                    └── response cache (weather + trains)
-```
+![Home Dashboard architecture diagram](docs/architecture.svg)
 
 The stack is three Docker containers on a private bridge network. Only `web` is reachable from your host machine. The database is used solely as a response cache so that upstream APIs are not hammered on every page load; it never stores personal data.
+
+For software architects, the diagram shows the main runtime responsibilities: Nginx serves the React SPA and proxies `/api`, the Express server owns validation and service orchestration, PostgreSQL stores cached API responses, and MeteoSwiss plus SBB/transport.opendata.ch provide live external data.
+
+For security architects, the diagram calls out the trust boundaries and review points: the public HTTP entry point, user-supplied station/location queries, untrusted upstream API responses, developer-mode log exposure, cached response data, and the controls currently in place (`Helmet`/CSP, CORS allowlist, rate limits, SSRF host allowlist, disabled redirects, input validation, and production blocking for `DEVELOPER_MODE`).
 
 **Key technology choices**
 

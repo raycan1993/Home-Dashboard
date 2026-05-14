@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="820" viewBox="0 0 1280 820" role="img" aria-labelledby="title desc">
+  <title id="title">Home Dashboard high-level architecture and security view</title>
+  <desc id="desc">Architecture diagram showing the browser, nginx web container, React client, Express API, PostgreSQL cache, shared TypeScript contracts, external APIs, trust boundaries, controls, and security risk points.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+    <marker id="riskArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+    <style>
+      .bg { fill: #f8fafc; }
+      .title { font: 700 28px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 14px Arial, sans-serif; fill: #475569; }
+      .boundary { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 18; }
+      .boundary-title { font: 700 15px Arial, sans-serif; fill: #334155; }
+      .node { fill: #ffffff; stroke: #334155; stroke-width: 2; rx: 12; }
+      .node-blue { fill: #eff6ff; stroke: #2563eb; }
+      .node-green { fill: #ecfdf5; stroke: #059669; }
+      .node-orange { fill: #fff7ed; stroke: #ea580c; }
+      .node-red { fill: #fef2f2; stroke: #dc2626; }
+      .node-purple { fill: #f5f3ff; stroke: #7c3aed; }
+      .node-gray { fill: #f8fafc; stroke: #64748b; }
+      .node-title { font: 700 16px Arial, sans-serif; fill: #0f172a; }
+      .node-text { font: 400 12px Arial, sans-serif; fill: #334155; }
+      .small { font: 400 11px Arial, sans-serif; fill: #475569; }
+      .tag { font: 700 10px Arial, sans-serif; fill: #ffffff; }
+      .tag-bg { rx: 7; }
+      .flow { fill: none; stroke: #64748b; stroke-width: 2.5; marker-end: url(#arrow); }
+      .risk-flow { fill: none; stroke: #dc2626; stroke-width: 2; stroke-dasharray: 6 5; marker-end: url(#riskArrow); }
+      .dash { fill: none; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 7 6; }
+      .label { font: 700 11px Arial, sans-serif; fill: #334155; }
+      .risk-title { font: 700 14px Arial, sans-serif; fill: #991b1b; }
+      .risk-text { font: 400 12px Arial, sans-serif; fill: #7f1d1d; }
+      .control-title { font: 700 14px Arial, sans-serif; fill: #065f46; }
+      .control-text { font: 400 12px Arial, sans-serif; fill: #064e3b; }
+      .legend-title { font: 700 13px Arial, sans-serif; fill: #0f172a; }
+      .legend-text { font: 400 12px Arial, sans-serif; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1280" height="820"/>
+  <text class="title" x="48" y="48">Home Dashboard Architecture</text>
+  <text class="subtitle" x="48" y="72">Functional data flow, trust boundaries, controls, and main security review points</text>
+
+  <rect class="boundary" x="40" y="105" width="175" height="575"/>
+  <text class="boundary-title" x="62" y="132">User device</text>
+
+  <rect class="boundary" x="250" y="105" width="250" height="575"/>
+  <text class="boundary-title" x="272" y="132">Public host surface</text>
+  <text class="small" x="272" y="152">Only published service: web:8080</text>
+
+  <rect class="boundary" x="535" y="105" width="455" height="575"/>
+  <text class="boundary-title" x="557" y="132">Private Docker network</text>
+  <text class="small" x="557" y="152">Server and database are internal-only</text>
+
+  <rect class="boundary" x="1025" y="105" width="215" height="575"/>
+  <text class="boundary-title" x="1047" y="132">Internet APIs</text>
+  <text class="small" x="1047" y="152">Untrusted upstream responses</text>
+
+  <rect class="node node-blue" x="70" y="215" width="115" height="110"/>
+  <text class="node-title" x="94" y="242">Browser</text>
+  <text class="node-text" x="88" y="268">React UI</text>
+  <text class="node-text" x="88" y="286">User settings</text>
+  <text class="node-text" x="88" y="304">Local storage</text>
+
+  <rect class="node node-green" x="285" y="190" width="180" height="155"/>
+  <text class="node-title" x="321" y="218">web container</text>
+  <text class="node-text" x="310" y="246">Nginx</text>
+  <text class="node-text" x="310" y="266">Serves static SPA</text>
+  <text class="node-text" x="310" y="286">Reverse proxies /api</text>
+  <text class="node-text" x="310" y="306">Host port 8080</text>
+  <rect class="tag-bg" x="310" y="318" width="86" height="18" fill="#059669"/>
+  <text class="tag" x="321" y="331">ENTRY POINT</text>
+
+  <rect class="node node-blue" x="285" y="405" width="180" height="170"/>
+  <text class="node-title" x="322" y="433">React SPA</text>
+  <text class="node-text" x="305" y="461">Weather card</text>
+  <text class="node-text" x="305" y="481">SBB connections</text>
+  <text class="node-text" x="305" y="501">Rocky assistant</text>
+  <text class="node-text" x="305" y="521">Training page</text>
+  <text class="node-text" x="305" y="541">Developer mode UI</text>
+
+  <rect class="node node-green" x="575" y="175" width="190" height="190"/>
+  <text class="node-title" x="618" y="203">server container</text>
+  <text class="node-text" x="600" y="231">Node 20 + Express</text>
+  <text class="node-text" x="600" y="251">/api/dashboard</text>
+  <text class="node-text" x="600" y="271">/api/weather</text>
+  <text class="node-text" x="600" y="291">/api/trains</text>
+  <text class="node-text" x="600" y="311">/api/rocky</text>
+  <text class="node-text" x="600" y="331">/api/dev when enabled</text>
+
+  <rect class="node node-purple" x="575" y="430" width="190" height="130"/>
+  <text class="node-title" x="621" y="458">Services</text>
+  <text class="node-text" x="600" y="486">Weather mapping</text>
+  <text class="node-text" x="600" y="506">SBB route lookup</text>
+  <text class="node-text" x="600" y="526">Capacity parsing</text>
+  <text class="node-text" x="600" y="546">Rocky messages</text>
+
+  <rect class="node node-orange" x="815" y="200" width="140" height="120"/>
+  <text class="node-title" x="846" y="228">Cache DB</text>
+  <text class="node-text" x="839" y="256">PostgreSQL 16</text>
+  <text class="node-text" x="839" y="276">API response cache</text>
+  <text class="node-text" x="839" y="296">Internal only</text>
+
+  <rect class="node node-gray" x="815" y="405" width="140" height="115"/>
+  <text class="node-title" x="842" y="433">Shared types</text>
+  <text class="node-text" x="836" y="461">WeatherData</text>
+  <text class="node-text" x="836" y="481">TrainConnection</text>
+  <text class="node-text" x="836" y="501">DashboardSnapshot</text>
+
+  <rect class="node node-orange" x="1055" y="205" width="150" height="120"/>
+  <text class="node-title" x="1087" y="233">MeteoSwiss</text>
+  <text class="node-text" x="1080" y="261">Weather forecast</text>
+  <text class="node-text" x="1080" y="281">Location search</text>
+  <text class="node-text" x="1080" y="301">Weather codes</text>
+
+  <rect class="node node-orange" x="1055" y="390" width="150" height="120"/>
+  <text class="node-title" x="1076" y="418">SBB Open Data</text>
+  <text class="node-text" x="1080" y="446">Connections</text>
+  <text class="node-text" x="1080" y="466">Station lookup</text>
+  <text class="node-text" x="1080" y="486">Capacity hints</text>
+
+  <path class="flow" d="M185 270 H285"/>
+  <text class="label" x="210" y="256">HTTP</text>
+
+  <path class="flow" d="M375 345 V405"/>
+  <text class="label" x="387" y="379">static assets</text>
+
+  <path class="flow" d="M465 270 H575"/>
+  <text class="label" x="489" y="256">/api proxy</text>
+
+  <path class="flow" d="M670 365 V430"/>
+  <text class="label" x="684" y="401">routes call services</text>
+
+  <path class="flow" d="M765 260 H815"/>
+  <text class="label" x="771" y="246">cache</text>
+
+  <path class="flow" d="M765 486 C865 575, 1000 350, 1055 270"/>
+  <text class="label" x="880" y="570">forecast/search</text>
+
+  <path class="flow" d="M765 505 C870 610, 1015 555, 1055 450"/>
+  <text class="label" x="895" y="627">connections/stations</text>
+
+  <path class="dash" d="M465 490 H815"/>
+  <text class="label" x="545" y="478">compile-time contracts</text>
+
+  <path class="dash" d="M765 460 H815"/>
+
+  <rect class="node node-red" x="60" y="705" width="355" height="75"/>
+  <text class="risk-title" x="80" y="730">Primary security risks</text>
+  <text class="risk-text" x="80" y="752">Public entry point, user-supplied station/location queries, upstream API data, debug logs, cached responses.</text>
+  <text class="risk-text" x="80" y="770">Review exposure before publishing beyond localhost or a trusted LAN.</text>
+
+  <rect class="node node-green" x="455" y="705" width="380" height="75"/>
+  <text class="control-title" x="475" y="730">Current controls</text>
+  <text class="control-text" x="475" y="752">Nginx front door, Express validation, Helmet/CSP, CORS allowlist, rate limits, SSRF host allowlist, no redirects.</text>
+  <text class="control-text" x="475" y="770">Dev API is gated by DEVELOPER_MODE and blocked in production.</text>
+
+  <rect class="node node-orange" x="875" y="705" width="345" height="75"/>
+  <text class="legend-title" x="895" y="730">Architectural notes</text>
+  <text class="legend-text" x="895" y="752">Database stores cache data only. External APIs require no credentials.</text>
+  <text class="legend-text" x="895" y="770">Shared package keeps frontend/backend response contracts aligned.</text>
+
+  <path class="risk-flow" d="M1130 325 V390"/>
+  <text class="risk-title" x="1139" y="360">untrusted data</text>
+
+  <path class="risk-flow" d="M670 175 C680 130, 760 118, 815 150"/>
+  <text class="risk-title" x="710" y="119">dev/log surface</text>
+  <text class="risk-text" x="710" y="137">enable only for testing</text>
+</svg>
