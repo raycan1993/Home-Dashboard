@@ -3,6 +3,8 @@ import type {
   ApiResponse,
   ConnectionStatus,
   DashboardSnapshot,
+  StationLocation,
+  TrainConnection,
   WeatherLocation,
 } from '@home-dashboard/shared';
 
@@ -45,6 +47,12 @@ export const api = {
   dashboard: (opts?: DashboardOpts) => call<DashboardSnapshot>(buildDashboardUrl(opts)),
   weatherSearch: (q: string) =>
     call<WeatherLocation[]>('/api/weather/search?q=' + encodeURIComponent(q)),
+  trainSearch: (q: string) =>
+    call<StationLocation[]>('/api/trains/stations?q=' + encodeURIComponent(q)),
+  trainConnections: (from: string, to: string) =>
+    call<TrainConnection[]>(
+      '/api/trains/connections?from=' + encodeURIComponent(from) + '&to=' + encodeURIComponent(to),
+    ),
   rocky: (plz?: string) => {
     const params = new URLSearchParams();
     if (plz) params.set('plz', plz);

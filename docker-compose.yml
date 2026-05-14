@@ -35,7 +35,7 @@ services:
       WEATHER_CITY: ${WEATHER_CITY:-Winterthur}
       SBB_FROM: ${SBB_FROM:-Winterthur}
       SBB_TO: ${SBB_TO:-Zürich HB}
-      SBB_NUM_CONNECTIONS: ${SBB_NUM_CONNECTIONS:-5}
+      SBB_NUM_CONNECTIONS: ${SBB_NUM_CONNECTIONS:-15}
       DEVELOPER_MODE: ${DEVELOPER_MODE:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
