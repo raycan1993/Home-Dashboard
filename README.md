@@ -39,287 +39,76 @@ The stack is three Docker containers on a private bridge network. Only `web` is 
 
 ### Detailed UML Architecture
 
-The diagrams below use Mermaid's UML-style notation and mirror the current codebase structure.
+The diagrams below use Mermaid and mirror the current codebase structure.
 
-#### Component Diagram
+#### High-Level Architecture Diagram
 
 ```mermaid
-classDiagram
-direction LR
+flowchart LR
+  User["User / Browser"]
 
-class Browser {
-  <<external client>>
-  +open http://localhost:8080
-  +render SPA
-}
+  subgraph Web["web container"]
+    Nginx["Nginx\nserves React bundle\nproxies /api"]
+  end
 
-class WebContainer {
-  <<Docker container: web>>
-  +nginx
-  +serve static React bundle
-  +proxy /api/* to server:3001
-}
+  subgraph Client["React + Vite client"]
+    App["App shell\nnavigation, language, developer mode"]
+    Weather["Weather card\ncurrent pattern, forecast, precipitation"]
+    Trains["SBB connections\nroute search, departures, capacity"]
+    Training["Training views"]
+    Rocky["Rocky assistant"]
+    DevTools["Developer mode\nweather and train test controls"]
+    ApiClient["API client"]
+  end
 
-class ClientApp {
-  <<React/Vite SPA>>
-  +App()
-  +LangContext
-  +tab navigation
-  +developer mode overlay
-  +localStorage selected PLZ
-}
+  subgraph Server["server container"]
+    Express["Express API\nsecurity, rate limits, routing"]
+    Routes["API routes\n/dashboard, /weather, /trains, /rocky, /dev"]
+    WeatherService["Weather service\nMeteoSwiss mapping and forecasts"]
+    TrainService["Train service\nSBB routes and capacity"]
+    RockyService["Rocky service\nweather-aware messages"]
+    Cache["Cache layer"]
+    Logger["Logger and dev log stream"]
+  end
 
-class ApiClient {
-  <<client/src/api.ts>>
-  +dashboard(opts)
-  +weatherSearch(q)
-  +trainSearch(q)
-  +trainConnections(from, to)
-  +rocky(plz)
-  +health()
-}
+  subgraph Shared["shared workspace package"]
+    Contracts["TypeScript contracts\nWeatherData, TrainConnection, DashboardSnapshot"]
+  end
 
-class UseDashboard {
-  <<hook>>
-  +poll every 60s
-  +refresh()
-  +status
-  +lastUpdated
-}
+  subgraph Database["db container"]
+    Postgres["PostgreSQL\nAPI response cache"]
+  end
 
-class WeatherCard {
-  <<component>>
-  +current weather pattern icon
-  +10-minute precipitation bars
-  +24-hour forecast
-  +7-day forecast
-  +location search
-  +developer diagnostics
-}
+  subgraph External["External APIs"]
+    MeteoSwiss["MeteoSwiss API"]
+    SBB["SBB / transport.opendata.ch API"]
+  end
 
-class WeatherPatternIcon {
-  <<component>>
-  +WeatherPattern enum rendering
-  +day/night variants
-  +fallback icon
-  +animated current icon
-}
+  User --> Nginx
+  Nginx --> App
+  App --> Weather
+  App --> Trains
+  App --> Training
+  App --> Rocky
+  App --> DevTools
+  App --> ApiClient
 
-class TrainConnections {
-  <<component>>
-  +station typeahead
-  +favourites
-  +connection list
-  +capacity indicators
-  +custom route refresh
-}
+  ApiClient --> Nginx
+  Nginx --> Express
+  Express --> Routes
+  Routes --> WeatherService
+  Routes --> TrainService
+  Routes --> RockyService
+  Routes --> Logger
 
-class RockyAssistant {
-  <<component>>
-  +poll /api/rocky
-  +cycle messages
-  +dev message override
-}
+  WeatherService --> MeteoSwiss
+  TrainService --> SBB
+  WeatherService --> Cache
+  TrainService --> Cache
+  Cache --> Postgres
 
-class DeveloperMode {
-  <<component>>
-  +weather pattern preview
-  +temperature/wind/rain controls
-  +train scenarios
-  +warning simulation
-  +disabled unless active
-}
-
-class TrainingPage {
-  <<components>>
-  +WeeklyTrainingPlan
-  +TrainingKPIs
-}
-
-class ServerContainer {
-  <<Docker container: server>>
-  +Node 20
-  +Express app
-  +Prisma client
-  +graceful shutdown
-}
-
-class ExpressApp {
-  <<server/src/index.ts>>
-  +applySecurity()
-  +requestLogger
-  +apiLimiter
-  +mount routers
-  +errorHandler
-}
-
-class DashboardRouter {
-  <<route /api/dashboard>>
-  +GET /?plz
-  +Promise.allSettled(weather, trains)
-  +return DashboardSnapshot
-}
-
-class WeatherRouter {
-  <<route /api/weather>>
-  +GET /
-  +GET /search
-  +validate PLZ/search query
-}
-
-class TrainsRouter {
-  <<route /api/trains>>
-  +GET /stations
-  +GET /connections
-  +validate station names
-}
-
-class RockyRouter {
-  <<route /api/rocky>>
-  +GET /?plz
-  +weather contextual messages
-}
-
-class HealthRouter {
-  <<route /api/health>>
-  +GET /
-  +integration status
-}
-
-class DevRouter {
-  <<route /api/dev>>
-  +GET /logs
-  +GET /logs/stream
-  +POST /logs/clear
-  +404 unless DEVELOPER_MODE=true
-}
-
-class WeatherService {
-  <<service>>
-  +getWeather(plz)
-  +searchLocations(query)
-  +map MeteoSwiss code to WeatherPattern
-  +build hourly forecast
-  +build 10-minute precipitation
-  +cache forecast/search
-}
-
-class TrainService {
-  <<service>>
-  +getTrainConnections()
-  +getTrainConnectionsForRoute(from, to)
-  +searchStations(query)
-  +parse capacity1st/capacity2nd
-  +cache by route/minute
-}
-
-class RockyService {
-  <<service>>
-  +generateRockyMessages(weather)
-  +derive tone from weather
-}
-
-class HttpClient {
-  <<utility>>
-  +SSRF allowlist
-  +timeout handling
-  +redacted logging
-}
-
-class Cache {
-  <<utility>>
-  +cacheGet(key)
-  +cacheSet(key, value, ttl)
-  +cachePurgeExpired()
-}
-
-class Logger {
-  <<utility>>
-  +redact secrets
-  +in-memory log ring
-  +EventEmitter for SSE
-}
-
-class Env {
-  <<config>>
-  +load .env
-  +validate with Zod
-  +production guardrails
-}
-
-class SharedPackage {
-  <<npm workspace>>
-  +ApiResponse<T>
-  +DashboardSnapshot
-  +WeatherData
-  +WeatherPattern
-  +TrainConnection
-  +DevLog
-}
-
-class Postgres {
-  <<Docker container: db>>
-  +PostgreSQL 16
-  +cache table
-  +internal network only
-}
-
-class Prisma {
-  <<ORM>>
-  +PrismaClient singleton
-  +schema push at container start
-}
-
-class MeteoSwissAPI {
-  <<external API>>
-  +plzDetail forecast
-  +location search
-}
-
-class TransportOpenDataAPI {
-  <<external API>>
-  +connections
-  +locations
-}
-
-Browser --> WebContainer : HTTP :8080
-WebContainer --> ClientApp : static assets
-ClientApp --> ApiClient : calls
-ClientApp --> UseDashboard : uses
-ClientApp --> WeatherCard : renders
-ClientApp --> TrainConnections : renders
-ClientApp --> RockyAssistant : renders
-ClientApp --> DeveloperMode : renders
-ClientApp --> TrainingPage : renders
-WeatherCard --> WeatherPatternIcon : renders
-UseDashboard --> ApiClient : refresh dashboard
-WebContainer --> ServerContainer : proxy /api/*
-ServerContainer --> ExpressApp : boots
-ExpressApp --> DashboardRouter : mounts
-ExpressApp --> WeatherRouter : mounts
-ExpressApp --> TrainsRouter : mounts
-ExpressApp --> RockyRouter : mounts
-ExpressApp --> HealthRouter : mounts
-ExpressApp --> DevRouter : mounts
-DashboardRouter --> WeatherService : getWeather()
-DashboardRouter --> TrainService : getTrainConnections()
-WeatherRouter --> WeatherService : getWeather(), searchLocations()
-TrainsRouter --> TrainService : searchStations(), route lookup
-RockyRouter --> WeatherService : getWeather()
-RockyRouter --> RockyService : generate messages
-WeatherService --> HttpClient : MeteoSwiss requests
-TrainService --> HttpClient : transport.opendata.ch requests
-WeatherService --> Cache : forecast/search cache
-TrainService --> Cache : route/station cache
-Cache --> Prisma : read/write
-Prisma --> Postgres : SQL
-Logger --> DevRouter : SSE log stream
-HttpClient --> Logger : IN/OUT logs
-ExpressApp --> Env : configuration
-WeatherService --> MeteoSwissAPI : HTTPS
-TrainService --> TransportOpenDataAPI : HTTPS
-ClientApp ..> SharedPackage : TypeScript contracts
-ServerContainer ..> SharedPackage : TypeScript contracts
+  Client -. uses .-> Contracts
+  Server -. uses .-> Contracts
 ```
 
 #### Main Data Flow Sequence
